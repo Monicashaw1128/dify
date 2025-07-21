@@ -12,7 +12,7 @@ from models.dataset import Dataset, Document
 from services.feature_service import FeatureService
 
 
-@shared_task(queue="dataset")
+@shared_task(queue="dataset")   # 注册为 Celery 任务，使用名为 "dataset" 的队列
 def document_indexing_task(dataset_id: str, document_ids: list):
     """
     Async process document
@@ -22,7 +22,7 @@ def document_indexing_task(dataset_id: str, document_ids: list):
     Usage: document_indexing_task.delay(dataset_id, document_ids)
     """
     documents = []
-    start_at = time.perf_counter()
+    start_at = time.perf_counter()  # 记录任务启动时间
 
     dataset = db.session.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
@@ -30,7 +30,7 @@ def document_indexing_task(dataset_id: str, document_ids: list):
         db.session.close()
         return
     # check document limit
-    features = FeatureService.get_features(dataset.tenant_id)
+    features = FeatureService.get_features(dataset.tenant_id)   # 租户计费资源校验
     try:
         if features.billing.enabled:
             vector_space = features.vector_space
@@ -74,7 +74,7 @@ def document_indexing_task(dataset_id: str, document_ids: list):
     db.session.commit()
 
     try:
-        indexing_runner = IndexingRunner()
+        indexing_runner = IndexingRunner()  # 向量化
         indexing_runner.run(documents)
         end_at = time.perf_counter()
         logging.info(click.style("Processed dataset: {} latency: {}".format(dataset_id, end_at - start_at), fg="green"))

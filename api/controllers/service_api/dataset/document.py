@@ -190,9 +190,9 @@ class DocumentUpdateByTextApi(DatasetApiResource):
 class DocumentAddByFileApi(DatasetApiResource):
     """Resource for documents."""
 
-    @cloud_edition_billing_resource_check("vector_space", "dataset")
-    @cloud_edition_billing_resource_check("documents", "dataset")
-    @cloud_edition_billing_rate_limit_check("knowledge", "dataset")
+    @cloud_edition_billing_resource_check("vector_space", "dataset")    # 租户是否有足够资源使用向量空间；
+    @cloud_edition_billing_resource_check("documents", "dataset")       # 是否允许创建新的文档；
+    @cloud_edition_billing_rate_limit_check("knowledge", "dataset")     # 是否超过了调用频率。
     def post(self, tenant_id, dataset_id):
         """Create document by upload file."""
         args = {}
@@ -220,7 +220,7 @@ class DocumentAddByFileApi(DatasetApiResource):
         args["indexing_technique"] = indexing_technique
 
         if "embedding_model_provider" in args:
-            DatasetService.check_embedding_model_setting(
+            DatasetService.check_embedding_model_setting(   # 校验嵌入模型合法性
                 tenant_id, args["embedding_model_provider"], args["embedding_model"]
             )
         if (
@@ -228,7 +228,7 @@ class DocumentAddByFileApi(DatasetApiResource):
             and args["retrieval_model"].get("reranking_model")
             and args["retrieval_model"].get("reranking_model").get("reranking_provider_name")
         ):
-            DatasetService.check_reranking_model_setting(
+            DatasetService.check_reranking_model_setting(   # 校验重排序模型合法性
                 tenant_id,
                 args["retrieval_model"].get("reranking_model").get("reranking_provider_name"),
                 args["retrieval_model"].get("reranking_model").get("reranking_model_name"),
@@ -267,7 +267,7 @@ class DocumentAddByFileApi(DatasetApiResource):
             raise ValueError("process_rule is required.")
 
         try:
-            documents, batch = DocumentService.save_document_with_dataset_id(
+            documents, batch = DocumentService.save_document_with_dataset_id(   # 核心功能
                 dataset=dataset,
                 knowledge_config=knowledge_config,
                 account=dataset.created_by_account,

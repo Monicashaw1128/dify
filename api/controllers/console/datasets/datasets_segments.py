@@ -46,16 +46,16 @@ class DatasetDocumentSegmentListApi(Resource):
     def get(self, dataset_id, document_id):
         dataset_id = str(dataset_id)
         document_id = str(document_id)
-        dataset = DatasetService.get_dataset(dataset_id)
+        dataset = DatasetService.get_dataset(dataset_id)                    # 检查数据集是否存在
         if not dataset:
             raise NotFound("Dataset not found.")
 
         try:
-            DatasetService.check_dataset_permission(dataset, current_user)
+            DatasetService.check_dataset_permission(dataset, current_user)  # 检查当前用户是否有权限访问该数据集
         except services.errors.account.NoPermissionError as e:
             raise Forbidden(str(e))
 
-        document = DocumentService.get_document(dataset_id, document_id)
+        document = DocumentService.get_document(dataset_id, document_id)    # 检查对应文档是否存在
 
         if not document:
             raise NotFound("Document not found.")

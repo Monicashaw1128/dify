@@ -1075,7 +1075,7 @@ class DocumentService:
         created_from: str = "web",
     ):
         # check document limit
-        features = FeatureService.get_features(current_user.current_tenant_id)
+        features = FeatureService.get_features(current_user.current_tenant_id)  # 计费限制判断
 
         if features.billing.enabled:
             if not knowledge_config.original_document_id:
@@ -1142,11 +1142,11 @@ class DocumentService:
                     )  # type: ignore
 
         documents = []
-        if knowledge_config.original_document_id:
+        if knowledge_config.original_document_id:   # 如果是已有文档
             document = DocumentService.update_document_with_dataset_id(dataset, knowledge_config, account)
             documents.append(document)
             batch = document.batch
-        else:
+        else:   # 否则，创建新文档
             batch = time.strftime("%Y%m%d%H%M%S") + str(100000 + secrets.randbelow(exclusive_upper_bound=900000))
             # save process rule
             if not dataset_process_rule:
@@ -1353,7 +1353,7 @@ class DocumentService:
 
                 # trigger async task
                 if document_ids:
-                    document_indexing_task.delay(dataset.id, document_ids)
+                    document_indexing_task.delay(dataset.id, document_ids)  # delay是Celery框架的一个方法，作用是将任务异步发送到任务队列中，让后台 worker 异步执行，而不是当前线程同步执行
                 if duplicate_document_ids:
                     duplicate_document_indexing_task.delay(dataset.id, duplicate_document_ids)
 

@@ -65,6 +65,7 @@ class IndexingRunner:
                 if not processing_rule:
                     raise ValueError("no process rule found")
                 index_type = dataset_document.doc_form
+                # 这是一个工厂模式，根据doc_form来初始化不同的index_processor，它封装了处理不同格式文档的提取和索引逻辑
                 index_processor = IndexProcessorFactory(index_type).init_index_processor()
                 # extract
                 text_docs = self._extract(index_processor, dataset_document, processing_rule.to_dict())
@@ -77,6 +78,7 @@ class IndexingRunner:
                 self._load_segments(dataset, dataset_document, documents)
 
                 # load
+                # 前面都在切片，这一步才是向量化
                 self._load(
                     index_processor=index_processor,
                     dataset=dataset,
@@ -522,10 +524,12 @@ class IndexingRunner:
         """
         insert index and update document/segment status to completed
         """
-
+        # high_quality和economy的区别：
+        # high_quality: 使用 embedding 模型生成向量
+        # economy: 不使用 embedding 模型，直接构建关键词索引
         embedding_model_instance = None
         if dataset.indexing_technique == "high_quality":
-            embedding_model_instance = self.model_manager.get_model_instance(
+            embedding_model_instance = self.model_manager.get_model_instance(   # 准备embedding模型
                 tenant_id=dataset.tenant_id,
                 provider=dataset.embedding_model_provider,
                 model_type=ModelType.TEXT_EMBEDDING,
@@ -553,10 +557,10 @@ class IndexingRunner:
                 # Thereby avoiding potential database insertion deadlocks
                 document_groups: list[list[Document]] = [[] for _ in range(max_workers)]
                 for document in documents:
-                    hash = helper.generate_text_hash(document.page_content)
+                    hash = helper.generate_text_hash(document.page_content) # 对文本哈希，单纯为了获得分组编号
                     group_index = int(hash, 16) % max_workers
                     document_groups[group_index].append(document)
-                for chunk_documents in document_groups:
+                for chunk_documents in document_groups:     # 按照分组document_groups提交到线程池中，防止多个线程处理相似/重复数据
                     if len(chunk_documents) == 0:
                         continue
                     futures.append(
